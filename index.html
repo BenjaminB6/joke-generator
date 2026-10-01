@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Piadas Aleatórias</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .joke-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .joke-content {
+            font-size: 18px;
+            color: #333;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        .joke-type {
+            font-size: 12px;
+            color: #999;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #e74c3c;
+            text-align: center;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-generate {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-generate:active {
+            transform: translateY(0);
+        }
+
+        .btn-category {
+            background: #ecf0f1;
+            color: #333;
+            border: 2px solid #667eea;
+        }
+
+        .btn-category:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .category-select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 15px;
+            cursor: pointer;
+        }
+
+        .category-select:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ecf0f1;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .joke-content {
+                font-size: 16px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>😂 Gerador de Piadas</h1>
+        <p class="subtitle">Clique para gerar uma piada aleatória!</p>
+
+        <select class="category-select" id="categorySelect">
+            <option value="any">Qualquer Categoria</option>
+            <option value="general">Geral</option>
+            <option value="programming">Programação</option>
+            <option value="knock-knock">Bate-bate</option>
+        </select>
+
+        <div class="joke-box">
+            <div id="jokeDisplay" class="joke-content">
+                Clique no botão abaixo para gerar uma piada!
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-generate" onclick="generateJoke()">Gerar Piada</button>
+            <button class="btn-category" onclick="generateJoke(true)">Outra Piada</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-number" id="jokeCount">0</div>
+                <div>Piadas Geradas</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="favoriteCount">0</div>
+                <div>Favoritas</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let jokeCount = 0;
+        let favoriteCount = 0;
+
+        // API: JokeAPI (https://jokeapi.dev/)
+        const JOKE_API = 'https://v2.jokeapi.dev/joke';
+
+        async function generateJoke() {
+            const jokeDisplay = document.getElementById('jokeDisplay');
+            const category = document.getElementById('categorySelect').value;
+
+            // Mostrar carregando
+            jokeDisplay.innerHTML = '<div class="loading">⏳ Carregando piada...</div>';
+
+            try {
+                // Construir URL baseado na categoria
+                let url = `${JOKE_API}/${category}?format=json`;
+
+                // Adicionar parâmetros para melhor resultado
+                if (category === 'knock-knock') {
+                    url += '&type=knock-knock';
+                }
+
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error('Erro ao buscar piada');
+                }
+
+                const data = await response.json();
+
+                // Exibir piada baseado no tipo
+                let jokeText = '';
+                if (data.type === 'single') {
+                    jokeText = data.joke;
+                } else if (data.type === 'twopart') {
+                    jokeText = `${data.setup}<br><br>➜ ${data.delivery}`;
+                }
+
+                jokeDisplay.innerHTML = `
+                    <div>
+                        <div class="joke-content">${jokeText}</div>
+                        <div class="joke-type">Categoria: ${data.category}</div>
+                    </div>
+                `;
+
+                // Incrementar contador
+                jokeCount++;
+                document.getElementById('jokeCount').textContent = jokeCount;
+
+            } catch (error) {
+                jokeDisplay.innerHTML = `
+                    <div class="error">
+                        ❌ Erro ao carregar piada!<br>
+                        <small>${error.message}</small><br>
+                        <small>Tente novamente...</small>
+                    </div>
+                `;
+            }
+        }
+
+        // Carregar uma piada ao iniciar
+        window.addEventListener('load', generateJoke);
+
+        // Permitir Enter para gerar nova piada
+        document.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                generateJoke();
+            }
+        });
+    </script>
+</body>
+</html>
